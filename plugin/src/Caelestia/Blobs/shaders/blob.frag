@@ -288,6 +288,7 @@ void main() {
     float tintDelta = 0.0;
     float rimLight = 0.0;
     float fillLight = 0.0;
+    float glassFrameWeight = 0.0;
     vec2 normal = gradient / max(length(gradient), 0.001);
     float totalWeight = 0.0;
 
@@ -295,6 +296,7 @@ void main() {
         float frameW = smoothstep(-4.0, 4.0, minDist - dFrame);
         totalWeight += frameW;
         if (invertedGlass > 0.0) {
+            glassFrameWeight = frameW;
             float frameTint = clamp(invertedGlass / max(color.a, 0.01), 0.0, 1.0);
             tintDelta += (frameTint - 1.0) * frameW;
             float facing = clamp(0.5 - 0.35 * (normal.x + normal.y), 0.0, 1.0);
@@ -344,6 +346,10 @@ void main() {
     // shortcut: shadow reach is capped by smoothing padding; expand geometry for wider shadows.
     float shadowWidth = max(min(15.0, smoothFactor), 0.01);
     float falloff = 1.0 - smoothstep(0.0, shadowWidth, max(mergedSdf, 0.0));
-    float shadowA = 0.5 * shadowColor.a * falloff * falloff * (1.0 - alpha);
+    float shadowFacing = max(dot(normal, normalize(vec2(0.35, 1.0))), 0.0);
+    float shadowA = 0.5 * shadowColor.a * falloff * falloff * shadowFacing * (1.0 - alpha);
+    // Light glass needs a faint contact shadow over white; dark glass already separates by tint.
+    float lightSurface = smoothstep(0.5, 0.85, dot(color.rgb, vec3(0.2126, 0.7152, 0.0722)));
+    shadowA *= 1.0 - clamp(glassFrameWeight / max(totalWeight, 0.001), 0.0, 1.0) * (1.0 - 0.25 * lightSurface);
     fragColor = (col * alpha + vec4(shadowColor.rgb * shadowA, shadowA)) * qt_Opacity;
 }

@@ -161,7 +161,7 @@ StyledWindow {
             anchors.fill: parent
             anchors.margins: -50 // Make border thicker to smooth out bulge from closed drawers
             group: blobGroup
-            glass: Colours.transparency.glass
+            glass: Colours.transparency.regularGlass
             radius: root.borderRounding
             borderLeft: bar.implicitWidth - anchors.margins - root.sdfBorderOffset
             borderRight: root.borderThickness - anchors.margins - root.sdfBorderOffset
@@ -334,7 +334,7 @@ StyledWindow {
         property real deformAmount: 0.15
 
         group: blobGroup
-        glass: Colours.transparency.glass
+        glass: Colours.transparency.regularGlass
         visible: panel.visible && panel.width > 0 && panel.height > 0
         x: panel.x + bar.implicitWidth
         y: panel.y + root.borderThickness

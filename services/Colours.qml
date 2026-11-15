@@ -152,6 +152,7 @@ Singleton {
         readonly property real layers: Math.max(0, Math.min(1, Tokens.transparency.layers))
         // Alpha tint kaca cair (fork glass). Tanpa transparansi tidak ada blur, jadi kaca dimatikan.
         readonly property real glass: enabled ? 0.38 : 0
+        readonly property real regularGlass: enabled ? 0.7 : 0
 
         onEnabledChanged: {
             if (enabled)

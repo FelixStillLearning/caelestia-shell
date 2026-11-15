@@ -12,7 +12,7 @@ Item {
 
     required property var bar
     required property Brightness.Monitor monitor
-    property color colour: Colours.palette.m3primary
+    property color colour: Colours.transparency.enabled ? Colours.palette.m3onSurface : Colours.palette.m3primary
 
     readonly property string windowTitle: {
         const title = Hypr.activeToplevel?.title;

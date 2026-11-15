@@ -50,12 +50,16 @@ Item {
                 { tag: "two-panels", base: 1, count: 2, excluded: false },
                 { tag: "two-translucent-panels", base: 0.8, count: 2, excluded: false },
                 { tag: "three-overlapping-panels", base: 1, count: 3, excluded: false },
-                { tag: "excluded-panels", base: 1, count: 2, excluded: true }
+                { tag: "excluded-panels", base: 1, count: 2, excluded: true },
+                { tag: "regular-two-panels", base: 1, count: 2, excluded: false, glass: 0.7 },
+                { tag: "regular-three-panels", base: 0.8, count: 3, excluded: false, glass: 0.7 }
             ];
         }
 
         function test_joins(data) {
             scene.Window.window.color = "white";
+            const glass = data.glass ?? 0.38;
+            first.glass = second.glass = third.glass = glass;
             group.color = Qt.rgba(32 / 255, 32 / 255, 32 / 255, data.base);
             scene.opacity = data.base;
             second.x = data.count === 3 ? first.x : 240;
@@ -65,7 +69,7 @@ Item {
             wait(100);
             const image = grabImage(scene);
             for (let x = 245; x <= 255; ++x)
-                fuzzyCompare((255 - image.red(x, 130)) / (255 - 32), 0.38, 0.02, "joined tint at x=" + x);
+                fuzzyCompare((255 - image.red(x, 130)) / (255 - 32), glass, 0.02, "joined tint at x=" + x);
             if (data.excluded)
                 compare(image.red(250, 55), 255, "excluded panels retain their unblended corners");
         }

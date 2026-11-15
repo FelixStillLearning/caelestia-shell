@@ -53,6 +53,33 @@ Item {
             scene.Window.window.color = "white";
         }
 
+        function test_lightFrameContactShadow() {
+            group.color = "#fff9fa";
+            scene.opacity = 1;
+            frame.glass = 0.7;
+            wait(100);
+            const before = grabImage(scene);
+            group.shadowColor = "#b3000000";
+            wait(100);
+            const after = grabImage(scene);
+            const drop = before.red(300, 22) - after.red(300, 22);
+            verify(drop > 0 && drop <= 24, "light glass has a subtle contact shadow over white: " + drop);
+            compare(after.pixel(300, 378), before.pixel(300, 378), "contact shadow follows the light direction");
+        }
+
+        function test_opaqueFrameShadow() {
+            frame.glass = 0;
+            group.color = "#202020";
+            scene.opacity = 1;
+            wait(100);
+            const before = grabImage(scene);
+            group.shadowColor = "#b3000000";
+            wait(100);
+            const after = grabImage(scene);
+            verify(after.red(62, 70) < before.red(62, 70), "opaque frame retains its exterior shadow");
+            compare(after.pixel(30, 60), before.pixel(30, 60), "shadow never darkens the frame surface");
+        }
+
         function test_frameAndBar_data() {
             return [{ tag: "opaque-base", base: 1 }, { tag: "translucent-base", base: 0.8 }];
         }
@@ -73,7 +100,7 @@ Item {
             wait(100);
             const shadow = grabImage(scene);
             compare(shadow.pixel(30, 60), before.pixel(30, 60), "no shadow under bar");
-            verify(shadow.red(68, 70) < before.red(68, 70), "frame renderer receives outer shadow");
+            compare(shadow.pixel(68, 70), before.pixel(68, 70), "glass frame casts no shadow into the window gap");
 
             // Changing the frame hole keeps the merged surface coherent.
             frame.borderLeft = 340;

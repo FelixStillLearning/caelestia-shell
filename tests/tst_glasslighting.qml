@@ -24,6 +24,8 @@ Item {
         when: windowShown
         function init() {
             scene.Window.window.color = "black";
+            scene.color = "black";
+            group.color = "#202020";
             panel.glass = 0.38;
             wait(100);
         }
@@ -56,6 +58,29 @@ Item {
                 for (let y = 60; y <= 64; ++y)
                     peak = Math.max(peak, image.red(x, y));
             verify(peak > 90, "rim peak must be brighter than the previous flat sheen");
+        }
+        function test_regularMaterialContrast_data() {
+            return [
+                { tag: "dark-on-white", background: "white", surface: "#161216", foreground: Qt.rgba(240/255, 229/255, 234/255, 1) },
+                { tag: "dark-on-black", background: "#181818", surface: "#161216", foreground: Qt.rgba(240/255, 229/255, 234/255, 1) },
+                { tag: "light-on-white", background: "white", surface: "#fff9fa", foreground: Qt.rgba(33/255, 25/255, 29/255, 1) },
+                { tag: "light-on-black", background: "#181818", surface: "#fff9fa", foreground: Qt.rgba(33/255, 25/255, 29/255, 1) }
+            ];
+        }
+        function test_regularMaterialContrast(data) {
+            scene.color = data.background;
+            group.color = data.surface;
+            panel.glass = 0.7;
+            wait(100);
+            const image = grabImage(scene);
+            function luminance(r, g, b) {
+                const values = [r, g, b].map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+                return values[0] * 0.2126 + values[1] * 0.7152 + values[2] * 0.0722;
+            }
+            const background = luminance(image.red(260, 110)/255, image.green(260, 110)/255, image.blue(260, 110)/255);
+            const foreground = luminance(data.foreground.r, data.foreground.g, data.foreground.b);
+            verify((Math.max(background, foreground) + 0.05) / (Math.min(background, foreground) + 0.05) >= 4.5,
+                   "regular glass preserves text contrast across theme and backdrop combinations");
         }
         function test_disabledGlass() {
             panel.glass = 0;

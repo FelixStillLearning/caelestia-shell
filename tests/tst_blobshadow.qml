@@ -50,8 +50,10 @@ Item {
             const after = grabImage(scene);
             for (let x = 225; x < 395; ++x)
                 compare(after.pixel(x, 100), before.pixel(x, 100), "shadow under shape at x=" + x);
-            verify(after.red(215, 100) < before.red(215, 100), "shadow outside shape");
-            compare(after.pixel(195, 100), before.pixel(195, 100), "shadow ends within 15 px");
+            compare(after.pixel(215, 100), before.pixel(215, 100), "no halo on the illuminated left edge");
+            compare(after.pixel(300, 45), before.pixel(300, 45), "no halo above the panel");
+            verify(after.red(300, 257) < before.red(300, 257), "shadow retains its existing reach below the panel");
+            compare(after.pixel(300, 267), before.pixel(300, 267), "shadow ends within 15 px");
 
             group.shadowColor = "transparent";
             wait(100);

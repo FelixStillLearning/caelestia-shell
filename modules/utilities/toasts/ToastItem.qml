@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Caelestia
+import Caelestia.Blobs
 import Caelestia.Config
 import Caelestia.I18n
 import qs.components
@@ -12,12 +13,15 @@ StyledRect {
 
     required property Toast modelData
 
+    readonly property bool glassEnabled: Colours.transparency.glass > 0
+
     anchors.left: parent.left
     anchors.right: parent.right
     implicitHeight: layout.implicitHeight + Tokens.padding.large
 
     radius: Tokens.rounding.large
-    color: {
+    color: root.glassEnabled ? "transparent" : surfaceColour
+    readonly property color surfaceColour: {
         if (root.modelData.type === Toast.Success)
             return Colours.palette.m3successContainer;
         if (root.modelData.type === Toast.Warning)
@@ -27,7 +31,7 @@ StyledRect {
         return Colours.palette.m3surface;
     }
 
-    border.width: 1
+    border.width: root.glassEnabled ? 0 : 1
     border.color: {
         let colour = Colours.palette.m3outlineVariant;
         if (root.modelData.type === Toast.Success)
@@ -39,7 +43,24 @@ StyledRect {
         return Qt.alpha(colour, 0.3);
     }
 
+    BlobGroup {
+        id: glassGroup
+        color: Colours.palette.m3surface
+        shadowColor: Qt.alpha(Colours.palette.m3shadow, Colours.light ? 0.2 : 0.1)
+    }
+
+    BlobRect {
+        anchors.fill: parent
+        group: glassGroup
+        radius: root.radius
+        // A denser tint keeps toast text readable over bright application content.
+        glass: Colours.transparency.regularGlass
+        deformScale: 0
+        visible: root.glassEnabled
+    }
+
     Elevation {
+        visible: !root.glassEnabled
         anchors.fill: parent
         radius: parent.radius
         opacity: parent.opacity
@@ -99,6 +120,8 @@ StyledRect {
                 Layout.fillWidth: true
                 text: Tr.trMarked(root.modelData.title)
                 color: {
+                    if (root.glassEnabled)
+                        return Colours.palette.m3onSurface;
                     if (root.modelData.type === Toast.Success)
                         return Colours.palette.m3onSuccessContainer;
                     if (root.modelData.type === Toast.Warning)
@@ -116,6 +139,8 @@ StyledRect {
                 textFormat: Text.StyledText
                 text: Tr.trMarked(root.modelData.message)
                 color: {
+                    if (root.glassEnabled)
+                        return Colours.palette.m3onSurface;
                     if (root.modelData.type === Toast.Success)
                         return Colours.palette.m3onSuccessContainer;
                     if (root.modelData.type === Toast.Warning)
@@ -124,7 +149,7 @@ StyledRect {
                         return Colours.palette.m3onErrorContainer;
                     return Colours.palette.m3onSurface;
                 }
-                opacity: 0.8
+                opacity: root.glassEnabled ? 0.9 : 0.8
                 elide: Text.ElideRight
             }
         }
