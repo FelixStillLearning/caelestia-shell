@@ -174,6 +174,7 @@ void main() {
         }
     }
 
+    float dFrame = 1e10;
     if (hasInverted != 0) {
         float dOuter = sdBox(pixel, invertedOuter.xy, invertedOuter.zw) - 1.0;
         float dInner = sdRoundedBox(pixel, invertedInner.xy, invertedInner.zw, invertedRadius);
@@ -248,7 +249,7 @@ void main() {
         float minThick = min(min(innerTop - outerTop, outerBot - innerBot),
                              min(innerLeft - outerLeft, outerRight - innerRight));
         float kFrame = clamp(min(smoothFactor, minThick - 1.0), 1.0, smoothFactor);
-        float dFrame = smaxSharpA(dOuter, -dInner, kFrame);
+        dFrame = smaxSharpA(dOuter, -dInner, kFrame);
 
         mergedSdf = smin(mergedSdf, dFrame, smoothFactor);
         if (dFrame < minDist) {
@@ -265,5 +266,65 @@ void main() {
 
     float fw = fwidth(mergedSdf);
     float alpha = 1.0 - smoothstep(-fw, fw, mergedSdf);
-    fragColor = vec4(color.rgb * alpha, alpha) * qt_Opacity;
+    vec4 col = vec4(color.rgb, 1.0);
+
+    // ---- Kaca cair (fork glass), mengikuti notch Jarvis ----
+    // rectData[i*5+3].z = alpha tint kaca (0 = permukaan biasa). Bobot kaca dibaurkan +-4 px di garis tengah
+    // antara rect kaca dan tetangganya (bingkai/rect lain); zona smoothFactor penuh terlalu lebar untuk panel sempit.
+    float glassW = 0.0;
+    int gi = -1;
+    for (int i = 0; i < rectCount; i++) {
+        float g = rectData[i * 5 + 3].z;
+        if (g <= 0.0 || dArr[i] >= 1e9)
+            continue;
+        float dOther = dFrame;
+        for (int j = 0; j < rectCount; j++)
+            if (j != i)
+                dOther = min(dOther, dArr[j]);
+        float w = smoothstep(-4.0, 4.0, dOther - dArr[i]);
+        if (w > glassW) {
+            glassW = w;
+            gi = i;
+        }
+    }
+
+    if (gi >= 0) {
+        vec4 rect = rectData[gi * 5];
+        vec4 props = rectData[gi * 5 + 1];
+        vec4 invDm = rectData[gi * 5 + 2];
+        vec4 radii = rectData[gi * 5 + 4];
+        vec2 center = rect.xy + props.yz;
+        vec2 hs = rect.zw;
+        vec2 lp = mat2(invDm.xy, invDm.zw) * (pixel - center); // ikut deformasi pegas
+        float r = max(max(radii.x, radii.y), max(radii.z, radii.w));
+
+        // tint tipis: alpha akhir = glass. Lapisan dikali lagi dengan color.a (surfaceColour.a), dan bayangan
+        // MultiEffect (alpha k = shadowOpacity di ContentWindow.qml) ikut tertumpuk di bawahnya:
+        // a + k*a*(1-a) = T, jadi a dihitung mundur.
+        // ponytail: k disalin manual; ganti dengan bayangan khusus di luar bentuk kalau semua panel sudah kaca.
+        const float k = 0.7;
+        float T = clamp(rectData[gi * 5 + 3].z / max(color.a, 0.01), 0.0, 1.0);
+        float aGlass = ((1.0 + k) - sqrt((1.0 + k) * (1.0 + k) - 4.0 * k * T)) / (2.0 * k);
+        float tintA = mix(1.0, aGlass, glassW);
+
+        // cahaya lembut yang terkumpul di dasar kaca (dari 35% tinggi ke bawah)
+        float light = 0.07 * clamp((lp.y / hs.y + 0.3) / 1.3, 0.0, 1.0);
+
+        // kilau di dua sudut bawah
+        vec2 sc = vec2(hs.x - r * 0.7, hs.y - r * 0.7);
+        light += 0.13 * max(0.0, 1.0 - length(lp - vec2(-sc.x, sc.y)) / 46.0);
+        light += 0.09 * max(0.0, 1.0 - length(lp - sc) / 46.0);
+
+        // tepi 1.2 px: paling terang di sudut, redup di tengah sisi, sedikit lebih terang di kiri atas
+        float corner = 1.0 - smoothstep(0.0, r * 2.5, length(hs - min(abs(lp), hs)));
+        float dir = 0.5 - 0.25 * clamp(lp.x / hs.x + lp.y / hs.y, -2.0, 2.0);
+        float rim = mix(0.10, 0.55, corner) * mix(0.72, 1.0, dir) * smoothstep(-1.2 - fw, -1.2 + fw, mergedSdf);
+
+        float a = clamp(light + rim, 0.0, 1.0) * glassW;
+        col = vec4(color.rgb * tintA, tintA) * (1.0 - a) + vec4(a); // putih di atas tint (premultiplied)
+    } else {
+        col.rgb *= col.a;
+    }
+
+    fragColor = col * alpha * qt_Opacity;
 }

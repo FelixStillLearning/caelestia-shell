@@ -22,6 +22,8 @@ struct BlobRectData {
     // Bitmask of indices in this rect's m_cachedRects that mutually exclude (or are excluded by) this rect.
     // Used by the shader to skip smin between excluded pairs.
     int excludeMask = 0;
+    // Alpha tint kaca cair; 0 = permukaan biasa
+    float glass = 0;
 };
 
 class BlobMaterial : public QSGMaterial {

@@ -91,7 +91,7 @@ Singleton {
             rule = "keyword layerrule %1 %2, match:namespace caelestia-drawers";
             trEnabled = transparency.enabled ? 1 : 0;
         }
-        Hypr.extras.batchMessage([rule.arg("blur").arg(trEnabled), rule.arg("ignore_alpha").arg(Math.max(0, transparency.base - 0.03))]);
+        Hypr.extras.batchMessage([rule.arg("blur").arg(trEnabled), rule.arg("ignore_alpha").arg(Math.max(0, Math.min(transparency.base, transparency.glass || 1) - 0.03))]);
     }
 
     function requestReloadHyprRules(): void {
@@ -150,6 +150,8 @@ Singleton {
         readonly property bool enabled: Tokens.transparency.enabled
         readonly property real base: Math.max(0, Math.min(1, Tokens.transparency.base - (root.light ? 0.1 : 0)))
         readonly property real layers: Math.max(0, Math.min(1, Tokens.transparency.layers))
+        // Alpha tint kaca cair (fork glass). Tanpa transparansi tidak ada blur, jadi kaca dimatikan.
+        readonly property real glass: enabled ? 0.38 : 0
 
         onEnabledChanged: {
             if (enabled)

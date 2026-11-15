@@ -100,6 +100,19 @@ void BlobShape::setRadius(qreal r) {
         m_group->markDirty();
 }
 
+qreal BlobShape::glass() const {
+    return m_glass;
+}
+
+void BlobShape::setGlass(qreal g) {
+    if (qFuzzyCompare(m_glass, g))
+        return;
+    m_glass = g;
+    emit glassChanged();
+    if (m_group)
+        m_group->markDirty();
+}
+
 QMatrix4x4 BlobShape::deformMatrix() const {
     return m_centeredDeformMatrix;
 }
@@ -235,6 +248,7 @@ void BlobShape::writeRectData(BlobRectData& r, const QPointF& scenePos) const {
     r.hw = static_cast<float>(width() / 2.0);
     r.hh = static_cast<float>(height() / 2.0);
     cornerRadii(r.radius);
+    r.glass = static_cast<float>(m_glass);
     r.offsetX = dm(0, 3);
     r.offsetY = dm(1, 3);
 
