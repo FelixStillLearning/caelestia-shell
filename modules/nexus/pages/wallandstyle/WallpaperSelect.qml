@@ -103,21 +103,7 @@ PageBase {
                 id: localWalls
 
                 model: {
-                    const walls = Wallpapers.list;
-                    const baseDir = Paths.wallsdir;
-                    const categories = {};
-                    const list = [];
-                    for (const w of walls) {
-                        if (w.parentDir !== baseDir) {
-                            const category = Wallpapers.getCategoryFor(w);
-                            if (category && (!(category in categories) || categories[category].name.localeCompare(w.name) > 0))
-                                categories[category] = w;
-                        } else {
-                            list.push(w);
-                        }
-                    }
-                    list.push(...Object.values(categories));
-                    list.sort((a, b) => ((a.parentDir === baseDir) - (b.parentDir === baseDir)) || a.name.localeCompare(b.name));
+                    const list = [...Wallpapers.list].sort((a, b) => a.name.localeCompare(b.name));
                     while (list.length < wallGrid.columns)
                         list.push(null);
                     return list;
@@ -132,24 +118,10 @@ PageBase {
 
                     source: String(modelData?.path ?? "")
                     selected: modelData?.path === Wallpapers.actualCurrent
-                    text: {
-                        if (!modelData)
-                            return "";
-
-                        if (modelData.parentDir !== Paths.wallsdir) {
-                            const category = Wallpapers.getCategoryFor(modelData);
-                            return category.slice(0, 1).toUpperCase() + category.slice(1);
-                        }
-                        return modelData.name;
-                    }
+                    text: modelData?.name ?? ""
                     onClicked: {
-                        if (modelData.parentDir !== Paths.wallsdir) {
-                            root.nState.selectedWallpaperCategory = Wallpapers.getCategoryFor(modelData);
-                            root.nState.openSubPage(2); // Category page
-                        } else {
-                            Wallpapers.setWallpaper(modelData.path);
-                            root.nState.closeSubPage();
-                        }
+                        Wallpapers.setWallpaper(modelData.path);
+                        root.nState.closeSubPage();
                     }
                 }
             }

@@ -32,7 +32,7 @@ QtObject {
                     WallpaperSelect {}
                 }
                 Component {
-                    WallpaperCategory {}
+                    Item {} // Category sub-page removed
                 }
                 Component {
                     ColourSelect {}
