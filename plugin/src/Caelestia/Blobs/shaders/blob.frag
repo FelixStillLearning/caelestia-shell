@@ -66,11 +66,21 @@ float smaxSharpA(float a, float b, float k) {
     return max(a, b) + blend;
 }
 
-float glassLight(vec2 normal, float sdf, float fw) {
-    float facing = clamp(0.5 - 0.35 * (normal.x + normal.y), 0.0, 1.0);
-    float rim = mix(0.05, 0.24, facing) * smoothstep(-1.2 - fw, -1.2 + fw, sdf);
-    float sheen = mix(0.012, 0.035, facing) * (1.0 - smoothstep(0.0, 20.0, max(-sdf, 0.0)));
-    return rim + sheen;
+float glassRim(float x) {
+    if (x < 0.07) return mix(0.10, 0.55, clamp(x / 0.07, 0.0, 1.0));
+    if (x < 0.30) return mix(0.55, 0.14, (x - 0.07) / 0.23);
+    if (x < 0.70) return mix(0.14, 0.10, (x - 0.30) / 0.40);
+    if (x < 0.93) return mix(0.10, 0.40, (x - 0.70) / 0.23);
+    return mix(0.40, 0.08, clamp((x - 0.93) / 0.07, 0.0, 1.0));
+}
+
+float glassFill(vec2 p, vec2 size, vec4 radii) {
+    float bottom = 0.07 * clamp((p.y / size.y - 0.35) / 0.65, 0.0, 1.0);
+    vec2 leftCenter = vec2(radii.z * 0.7, size.y - radii.z * 0.7);
+    vec2 rightCenter = vec2(size.x - radii.y * 0.7, size.y - radii.y * 0.7);
+    float left = 0.13 * max(0.0, 1.0 - distance(p, leftCenter) / 46.0);
+    float right = 0.09 * max(0.0, 1.0 - distance(p, rightCenter) / 46.0);
+    return 1.0 - (1.0 - bottom) * (1.0 - left) * (1.0 - right);
 }
 
 void main() {
@@ -276,7 +286,9 @@ void main() {
         discard;
     float alpha = 1.0 - smoothstep(-fw, fw, mergedSdf);
     float tintDelta = 0.0;
-    float glassWeight = 0.0;
+    float rimLight = 0.0;
+    float fillLight = 0.0;
+    vec2 normal = gradient / max(length(gradient), 0.001);
     float totalWeight = 0.0;
 
     if (hasInverted != 0) {
@@ -285,13 +297,14 @@ void main() {
         if (invertedGlass > 0.0) {
             float frameTint = clamp(invertedGlass / max(color.a, 0.01), 0.0, 1.0);
             tintDelta += (frameTint - 1.0) * frameW;
-            glassWeight += frameW;
+            float facing = clamp(0.5 - 0.35 * (normal.x + normal.y), 0.0, 1.0);
+            rimLight += mix(0.08, 0.40, facing) * frameW;
+            fillLight += mix(0.012, 0.035, facing)
+                * (1.0 - smoothstep(0.0, 20.0, max(-mergedSdf, 0.0))) * frameW;
         }
     }
 
-    // ---- Kaca cair (fork glass), mengikuti notch Jarvis ----
-    // rectData[i*5+3].z = alpha tint kaca (0 = permukaan biasa). Bobot kaca dibaurkan +-4 px di garis tengah
-    // antara rect kaca dan tetangganya (bingkai/rect lain); zona smoothFactor penuh terlalu lebar untuk panel sempit.
+    // Blend material contributions over 4 px while lighting only the shared outer contour.
     for (int i = 0; i < rectCount; i++) {
         if (dArr[i] >= 1e9)
             continue;
@@ -308,14 +321,23 @@ void main() {
         // Parent opacity supplies surfaceColour.a; shadows no longer need compensation.
         float aGlass = clamp(g / max(color.a, 0.01), 0.0, 1.0);
         tintDelta += (aGlass - 1.0) * w;
-        glassWeight += w;
+        vec4 rect = rectData[i * 5];
+        vec4 props = rectData[i * 5 + 1];
+        vec4 invDm = rectData[i * 5 + 2];
+        vec2 local = rect.zw + mat2(invDm.xy, invDm.zw) * (pixel - rect.xy - props.yz);
+        vec2 size = max(rect.zw * 2.0, vec2(0.01));
+        rimLight += glassRim(local.x / size.x) * w;
+        // Suppress highlights from corners buried inside another surface.
+        float exposed = 1.0 - smoothstep(0.0, 4.0, dArr[i] - mergedSdf);
+        fillLight += glassFill(local, size, rectData[i * 5 + 4]) * exposed * w;
     }
 
     // Normalise multi-panel junctions so equal glass tints stay equal through the join.
     float tintA = 1.0 + tintDelta / max(totalWeight, 0.001);
-    vec2 normal = gradient / max(length(gradient), 0.001);
-    float light = glassLight(normal, mergedSdf, fw);
-    light = clamp(light * glassWeight / max(totalWeight, 0.001), 0.0, 1.0);
+    float rim = rimLight / max(totalWeight, 0.001)
+        * smoothstep(-1.2 - fw, -1.2 + fw, mergedSdf);
+    float fill = fillLight / max(totalWeight, 0.001);
+    float light = clamp(1.0 - (1.0 - fill) * (1.0 - rim), 0.0, 1.0);
     vec4 col = vec4(color.rgb * tintA, tintA) * (1.0 - light) + vec4(light);
 
     // Knock out the full shape coverage, rather than its translucent tint.
