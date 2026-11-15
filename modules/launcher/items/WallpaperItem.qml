@@ -18,7 +18,7 @@ Item {
     z: PathView.z ?? 0 // qmllint disable missing-property
 
     Component.onCompleted: {
-        scale = Qt.binding(() => PathView.isCurrentItem ? 1 : PathView.onPath ? 0.8 : 0);
+        scale = Qt.binding(() => PathView.isCurrentItem ? 1 : PathView.onPath ? 0.94 : 0);
         opacity = Qt.binding(() => PathView.onPath ? 1 : 0);
     }
 
@@ -37,7 +37,7 @@ Item {
         anchors.fill: image
         radius: image.radius
         opacity: root.PathView.isCurrentItem ? 1 : 0
-        level: 4
+        level: 2
 
         Behavior on opacity {
             Anim {
@@ -73,6 +73,32 @@ Item {
                 return Qt.size(image.implicitWidth * dpr, image.implicitHeight * dpr);
             }
         }
+
+        StyledRect {
+            anchors.fill: parent
+            radius: image.radius
+            border.width: root.PathView.isCurrentItem ? 2 : 1
+            border.color: root.PathView.isCurrentItem ? Colours.palette.m3primary : Qt.alpha("white", 0.14)
+        }
+
+        StyledRect {
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: Tokens.padding.small
+            implicitWidth: check.implicitWidth + Tokens.padding.small * 2
+            implicitHeight: implicitWidth
+            radius: width / 2
+            color: Colours.palette.m3primary
+            visible: root.modelData.path === Wallpapers.actualCurrent
+
+            MaterialIcon {
+                id: check
+                anchors.centerIn: parent
+                text: "check"
+                color: Colours.palette.m3onPrimary
+                fontStyle: Tokens.font.icon.small
+            }
+        }
     }
 
     StyledText {
@@ -86,7 +112,7 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         elide: Text.ElideRight
         renderType: Text.QtRendering
-        text: root.modelData.relativePath
+        text: root.modelData.name
         font: Tokens.font.label.medium
     }
 

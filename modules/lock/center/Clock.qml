@@ -23,8 +23,8 @@ Item {
 
         y: -root.calcTopOff(hourMetrics)
         text: Time.hourStr
-        color: Colours.palette.m3primary
-        font: Tokens.font.headline.builders.large.scale(7 * root.centerScale).width(30).build()
+        color: Colours.palette.m3onSurface
+        font: Tokens.font.headline.builders.large.scale(5 * root.centerScale).width(30).build()
 
         TextMetrics {
             id: hourMetrics
@@ -41,8 +41,8 @@ Item {
         y: -root.calcTopOff(minuteMetrics)
 
         text: Time.minuteStr
-        color: Colours.palette.m3secondary
-        font: Tokens.font.headline.builders.large.scale((Units.twelveHourClock ? 3.8 : 7) * root.centerScale).width(30).build()
+        color: Qt.alpha(Colours.palette.m3onSurface, 0.82)
+        font: Tokens.font.headline.builders.large.scale((Units.twelveHourClock ? 2.8 : 5) * root.centerScale).width(30).build()
 
         TextMetrics {
             id: minuteMetrics

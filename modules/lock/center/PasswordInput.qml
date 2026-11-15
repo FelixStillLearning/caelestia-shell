@@ -15,14 +15,13 @@ StyledRect {
     required property int centerWidth
     required property var lock
 
-    implicitWidth: {
-        const w = centerWidth * 0.8;
-        return lock.pam.buffer ? w : Math.min(w, inputField.placeholderWidth + iconWrapper.implicitWidth + enterButton.implicitWidth + input.spacing * 2 + Tokens.padding.medium * 2);
-    }
+    implicitWidth: centerWidth * 0.8
     implicitHeight: input.implicitHeight + Tokens.padding.small
 
-    color: Colours.tPalette.m3surfaceContainer
+    color: Qt.alpha(Colours.palette.m3surfaceContainer, Colours.transparency.enabled ? 0.65 : 1)
     radius: Tokens.rounding.full
+    border.width: 1
+    border.color: Qt.alpha(Colours.palette.m3onSurface, 0.14)
 
     focus: true
     onActiveFocusChanged: {

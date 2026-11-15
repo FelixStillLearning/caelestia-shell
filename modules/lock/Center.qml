@@ -1,6 +1,7 @@
 import "center"
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import Caelestia.Config
 import qs.components
 import qs.services
@@ -37,6 +38,14 @@ ColumnLayout {
         Layout.topMargin: Tokens.spacing.extraExtraLarge * root.centerScale
         Layout.bottomMargin: Tokens.spacing.extraLarge * root.centerScale
         centerWidth: root.centerWidth
+    }
+
+    StyledText {
+        Layout.alignment: Qt.AlignHCenter
+        Layout.maximumWidth: root.centerWidth
+        text: Quickshell.env("USER")
+        font: Tokens.font.title.medium
+        elide: Text.ElideRight
     }
 
     PasswordInput {

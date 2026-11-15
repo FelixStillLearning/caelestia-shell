@@ -15,7 +15,7 @@ PathView {
     required property var panels
     required property var content
 
-    readonly property int itemWidth: Tokens.sizes.launcher.wallpaperWidth * 0.8 + Tokens.padding.medium * 2
+    readonly property int itemWidth: Tokens.sizes.launcher.wallpaperWidth + Tokens.padding.medium * 2
 
     readonly property int numItems: {
         const screen = (QsWindow.window as QsWindow)?.screen;
@@ -62,6 +62,7 @@ PathView {
     }
 
     implicitWidth: Math.min(numItems, count) * itemWidth
+    implicitHeight: currentItem?.implicitHeight ?? Tokens.sizes.launcher.wallpaperHeight
     pathItemCount: numItems
     cacheItemCount: 4
 

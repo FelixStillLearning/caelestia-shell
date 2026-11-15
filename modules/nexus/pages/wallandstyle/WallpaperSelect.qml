@@ -74,6 +74,7 @@ PageBase {
             imgHeight: Math.round(width * 0.3)
             radius: Tokens.rounding.extraLarge
             source: Quickshell.shellPath("assets/wallpaper.webp")
+            selected: Wallpapers.actualCurrent === Quickshell.shellPath("assets/wallpaper.webp")
             text: Tr.tr("Featured wallpaper")
             fillLabel: false
             onClicked: {
@@ -89,10 +90,12 @@ PageBase {
         }
 
         GridLayout {
+            id: wallGrid
+
             Layout.fillWidth: true
             visible: localWalls.count > 0
 
-            columns: Config.nexus.wallpapersPerRow
+            columns: Math.max(1, Math.min(Config.nexus.wallpapersPerRow, Math.floor(root.cappedWidth / 200)))
             rowSpacing: Tokens.spacing.medium
             columnSpacing: Tokens.spacing.large
 
@@ -115,7 +118,7 @@ PageBase {
                     }
                     list.push(...Object.values(categories));
                     list.sort((a, b) => ((a.parentDir === baseDir) - (b.parentDir === baseDir)) || a.name.localeCompare(b.name));
-                    while (list.length < Config.nexus.wallpapersPerRow)
+                    while (list.length < wallGrid.columns)
                         list.push(null);
                     return list;
                 }
@@ -128,6 +131,7 @@ PageBase {
                     enabled: modelData
 
                     source: String(modelData?.path ?? "")
+                    selected: modelData?.path === Wallpapers.actualCurrent
                     text: {
                         if (!modelData)
                             return "";

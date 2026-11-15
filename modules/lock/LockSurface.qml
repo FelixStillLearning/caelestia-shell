@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import Quickshell.Wayland
+import Caelestia.Blobs
 import Caelestia.Config
 import qs.components
 import qs.components.images
@@ -15,6 +16,8 @@ WlSessionLockSurface {
     required property Pam pam
 
     readonly property alias unlocking: unlockAnim.running
+    readonly property real panelHeight: Math.min((screen?.height ?? 0) * contentItem.Tokens.sizes.lock.heightMult, height - contentItem.Tokens.padding.extraLarge * 2)
+    readonly property real panelWidth: Math.min(panelHeight * contentItem.Tokens.sizes.lock.ratio, width - contentItem.Tokens.padding.extraLarge * 2)
 
     contentItem.Config.screen: screen.name
     contentItem.Tokens.screen: screen.name
@@ -104,21 +107,8 @@ WlSessionLockSurface {
                     to: 1
                     type: Anim.FastSpatial
                 }
-                Anim {
-                    target: lockContent
-                    property: "rotation"
-                    to: 360
-                    duration: Tokens.anim.durations.expressiveFastSpatial
-                    easing: Tokens.anim.standardAccel
-                }
             }
             ParallelAnimation {
-                Anim {
-                    target: lockIcon
-                    property: "rotation"
-                    to: 360
-                    easing: Tokens.anim.standardDecel
-                }
                 Anim {
                     type: Anim.DefaultEffects
                     target: lockIcon
@@ -144,12 +134,12 @@ WlSessionLockSurface {
                 Anim {
                     target: lockContent
                     property: "implicitWidth"
-                    to: (root.screen?.height ?? 0) * lockContent.Tokens.sizes.lock.heightMult * lockContent.Tokens.sizes.lock.ratio
+                    to: root.panelWidth
                 }
                 Anim {
                     target: lockContent
                     property: "implicitHeight"
-                    to: (root.screen?.height ?? 0) * lockContent.Tokens.sizes.lock.heightMult
+                    to: root.panelHeight
                 }
             }
         }
@@ -173,6 +163,11 @@ WlSessionLockSurface {
         Loader {
             anchors.fill: parent
             sourceComponent: Config.lock.useWallpaper ? wallpaperBackground : screencopyBackground
+        }
+
+        StyledRect {
+            anchors.fill: parent
+            color: Qt.alpha(Colours.palette.m3surface, 0.35)
         }
     }
 
@@ -203,23 +198,24 @@ WlSessionLockSurface {
         implicitHeight: size
 
         visible: Config.lock.enabled
-        rotation: 180
         scale: 0
 
-        StyledRect {
+        BlobGroup {
+            id: glassGroup
+
+            color: Colours.palette.m3surface
+            shadowColor: Qt.alpha(Colours.palette.m3shadow, 0.25)
+            smoothing: 16
+        }
+
+        BlobRect {
             id: lockBg
 
             anchors.fill: parent
-            color: Colours.palette.m3surface
+            group: glassGroup
+            glass: Colours.transparency.glass
+            deformScale: 0
             radius: parent.radius
-            opacity: Colours.transparency.enabled ? Colours.transparency.base : 1
-
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                blurMax: 15
-                shadowColor: Qt.alpha(Colours.palette.m3shadow, 0.7)
-            }
         }
 
         MaterialIcon {
@@ -228,15 +224,14 @@ WlSessionLockSurface {
             anchors.centerIn: parent
             text: "lock"
             fontStyle: Tokens.font.icon.builders.extraLarge.scale(4).weight(Font.Bold).build()
-            rotation: 180
         }
 
         Content {
             id: content
 
             anchors.centerIn: parent
-            width: (root.screen?.height ?? 0) * Tokens.sizes.lock.heightMult * Tokens.sizes.lock.ratio - Tokens.padding.extraLargeIncreased
-            height: (root.screen?.height ?? 0) * Tokens.sizes.lock.heightMult - Tokens.padding.extraLargeIncreased
+            width: root.panelWidth - Tokens.padding.extraLargeIncreased * 2
+            height: root.panelHeight - Tokens.padding.extraLargeIncreased * 2
 
             lock: root
             opacity: 0

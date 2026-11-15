@@ -16,6 +16,7 @@ Item {
     property alias radius: imgWrapper.radius
     property alias imgHeight: imgWrapper.implicitHeight
     property bool fillLabel: true
+    property bool selected
 
     signal clicked
 
@@ -32,7 +33,7 @@ Item {
             id: imgWrapper
 
             Layout.fillWidth: true
-            implicitHeight: width
+            implicitHeight: Math.round(width * 9 / 16)
             radius: Tokens.rounding.largeIncreased
             color: Colours.tPalette.m3surfaceContainer
 
@@ -84,6 +85,32 @@ Item {
                     }
                 }
             }
+
+            StyledRect {
+                anchors.fill: parent
+                radius: imgWrapper.radius
+                border.width: root.selected ? 2 : 1
+                border.color: root.selected ? Colours.palette.m3primary : Qt.alpha("white", 0.12)
+            }
+
+            StyledRect {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: Tokens.padding.small
+                implicitWidth: check.implicitWidth + Tokens.padding.small * 2
+                implicitHeight: implicitWidth
+                radius: width / 2
+                color: Colours.palette.m3primary
+                visible: root.selected
+
+                MaterialIcon {
+                    id: check
+                    anchors.centerIn: parent
+                    text: "check"
+                    color: Colours.palette.m3onPrimary
+                    fontStyle: Tokens.font.icon.small
+                }
+            }
         }
 
         StyledText {
@@ -92,8 +119,8 @@ Item {
             Layout.bottomMargin: Tokens.padding.small
             Layout.fillWidth: true
             color: Colours.palette.m3onSurfaceVariant
-            font: Tokens.font.label.builders.small.weight(Font.Medium).build()
-            horizontalAlignment: Text.AlignHCenter
+            font: Tokens.font.label.builders.medium.weight(Font.Medium).build()
+            horizontalAlignment: Text.AlignLeft
             elide: Text.ElideRight
         }
     }
