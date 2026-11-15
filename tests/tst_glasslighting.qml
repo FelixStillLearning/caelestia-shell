@@ -59,6 +59,22 @@ Item {
                     peak = Math.max(peak, image.red(x, y));
             verify(peak > 90, "rim peak must be brighter than the previous flat sheen");
         }
+        function test_lightContour_data() {
+            return [{ tag: "regular", glass: 0.7 }, { tag: "thin", glass: 0.38 }];
+        }
+        function test_lightContour(data) {
+            scene.color = "white";
+            group.color = "#fff9fa";
+            panel.glass = data.glass;
+            wait(100);
+            const image = grabImage(scene);
+            for (const xs of [[80, 81, 82], [437, 438, 439]]) {
+                const edge = Math.min(...xs.map(x => image.red(x, 150)));
+                verify(edge <= 243, "both sides of light glass remain defined over white: " + edge);
+            }
+            compare(image.red(75, 150), 255, "no surrounding halo outside the contour");
+            fuzzyCompare(image.red(90, 150), 255, 2, "the contour does not darken the glass body");
+        }
         function test_regularMaterialContrast_data() {
             return [
                 { tag: "dark-on-white", background: "white", surface: "#161216", foreground: Qt.rgba(240/255, 229/255, 234/255, 1) },
