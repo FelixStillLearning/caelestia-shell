@@ -277,52 +277,54 @@ void main() {
 
     float fw = fwidth(mergedSdf);
     float alpha = 1.0 - smoothstep(-fw, fw, mergedSdf);
-    float tintA = 1.0;
+    float tintDelta = 0.0;
     float light = 0.0;
+    float totalWeight = 0.0;
 
-    if (hasInverted != 0 && invertedGlass > 0.0) {
+    if (hasInverted != 0) {
         float frameW = smoothstep(-4.0, 4.0, minDist - dFrame);
-        float frameTint = clamp(invertedGlass / max(color.a, 0.01), 0.0, 1.0);
-        tintA += (frameTint - 1.0) * frameW;
-        light += glassLight(pixel - invertedInner.xy, invertedInner.zw, invertedRadius, mergedSdf, fw) * frameW;
+        totalWeight += frameW;
+        if (invertedGlass > 0.0) {
+            float frameTint = clamp(invertedGlass / max(color.a, 0.01), 0.0, 1.0);
+            tintDelta += (frameTint - 1.0) * frameW;
+            light += glassLight(pixel - invertedInner.xy, invertedInner.zw, invertedRadius, mergedSdf, fw) * frameW;
+        }
     }
 
     // ---- Kaca cair (fork glass), mengikuti notch Jarvis ----
     // rectData[i*5+3].z = alpha tint kaca (0 = permukaan biasa). Bobot kaca dibaurkan +-4 px di garis tengah
     // antara rect kaca dan tetangganya (bingkai/rect lain); zona smoothFactor penuh terlalu lebar untuk panel sempit.
-    float glassW = 0.0;
-    int gi = -1;
     for (int i = 0; i < rectCount; i++) {
-        float g = rectData[i * 5 + 3].z;
-        if (g <= 0.0 || dArr[i] >= 1e9)
+        if (dArr[i] >= 1e9)
             continue;
         float dOther = dFrame;
         for (int j = 0; j < rectCount; j++)
             if (j != i)
                 dOther = min(dOther, dArr[j]);
         float w = smoothstep(-4.0, 4.0, dOther - dArr[i]);
-        if (w > glassW) {
-            glassW = w;
-            gi = i;
-        }
-    }
+        totalWeight += w;
+        float g = rectData[i * 5 + 3].z;
+        if (w <= 0.0 || g <= 0.0)
+            continue;
 
-    if (gi >= 0) {
-        vec4 rect = rectData[gi * 5];
-        vec4 props = rectData[gi * 5 + 1];
-        vec4 invDm = rectData[gi * 5 + 2];
-        vec4 radii = rectData[gi * 5 + 4];
+        vec4 rect = rectData[i * 5];
+        vec4 props = rectData[i * 5 + 1];
+        vec4 invDm = rectData[i * 5 + 2];
+        vec4 radii = rectData[i * 5 + 4];
         vec2 center = rect.xy + props.yz;
         vec2 hs = rect.zw;
         vec2 lp = mat2(invDm.xy, invDm.zw) * (pixel - center); // ikut deformasi pegas
         float r = max(max(radii.x, radii.y), max(radii.z, radii.w));
 
         // Parent opacity supplies surfaceColour.a; shadows no longer need compensation.
-        float aGlass = clamp(rectData[gi * 5 + 3].z / max(color.a, 0.01), 0.0, 1.0);
-        tintA += (aGlass - 1.0) * glassW;
-        light += glassLight(lp, hs, r, mergedSdf, fw) * glassW;
+        float aGlass = clamp(g / max(color.a, 0.01), 0.0, 1.0);
+        tintDelta += (aGlass - 1.0) * w;
+        light += glassLight(lp, hs, r, mergedSdf, fw) * w;
     }
 
+    // Normalise multi-panel junctions so equal glass tints stay equal through the join.
+    float tintA = 1.0 + tintDelta / max(totalWeight, 0.001);
+    light /= max(totalWeight, 0.001);
     vec4 col = vec4(color.rgb * tintA, tintA) * (1.0 - light) + vec4(light);
 
     // Knock out the full shape coverage, rather than its translucent tint.

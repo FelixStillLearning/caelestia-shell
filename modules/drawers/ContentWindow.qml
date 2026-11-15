@@ -207,7 +207,6 @@ StyledWindow {
 
             panel: panels.osdWrapper
             deformAmount: 0.25
-            glass: Colours.transparency.glass
             x: panels.osdWrapper.x + panels.osd.x + bar.implicitWidth
             implicitWidth: panels.osd.width
         }
@@ -335,6 +334,7 @@ StyledWindow {
         property real deformAmount: 0.15
 
         group: blobGroup
+        glass: Colours.transparency.glass
         x: panel.x + bar.implicitWidth
         y: panel.y + root.borderThickness
         implicitWidth: panel.width
