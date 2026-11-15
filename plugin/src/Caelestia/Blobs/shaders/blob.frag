@@ -19,6 +19,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 invertedOuter;
     vec4 invertedInner;
     vec4 rectData[80];
+    vec4 shadowColor;
 };
 
 float sdRoundedBox(vec2 p, vec2 center, vec2 halfSize, float radius) {
@@ -257,11 +258,8 @@ void main() {
         }
     }
 
-    // Each renderer only outputs pixels it owns, but allow rendering
-    // blend zones to prevent gaps (mergedSdf < smoothFactor means in blend)
-    // myIndex == -1: inverted rect renders border-owned pixels
-    // myIndex >= 0: individual rect renders its owned pixels
-    if (owner != myIndex && mergedSdf > smoothFactor)
+    // A translucent union must be drawn once, including the blend zones.
+    if (owner != myIndex)
         discard;
 
     float fw = fwidth(mergedSdf);
@@ -298,13 +296,8 @@ void main() {
         vec2 lp = mat2(invDm.xy, invDm.zw) * (pixel - center); // ikut deformasi pegas
         float r = max(max(radii.x, radii.y), max(radii.z, radii.w));
 
-        // tint tipis: alpha akhir = glass. Lapisan dikali lagi dengan color.a (surfaceColour.a), dan bayangan
-        // MultiEffect (alpha k = shadowOpacity di ContentWindow.qml) ikut tertumpuk di bawahnya:
-        // a + k*a*(1-a) = T, jadi a dihitung mundur.
-        // ponytail: k disalin manual; ganti dengan bayangan khusus di luar bentuk kalau semua panel sudah kaca.
-        const float k = 0.7;
-        float T = clamp(rectData[gi * 5 + 3].z / max(color.a, 0.01), 0.0, 1.0);
-        float aGlass = ((1.0 + k) - sqrt((1.0 + k) * (1.0 + k) - 4.0 * k * T)) / (2.0 * k);
+        // Parent opacity supplies surfaceColour.a; shadows no longer need compensation.
+        float aGlass = clamp(rectData[gi * 5 + 3].z / max(color.a, 0.01), 0.0, 1.0);
         float tintA = mix(1.0, aGlass, glassW);
 
         // cahaya lembut yang terkumpul di dasar kaca (dari 35% tinggi ke bawah)
@@ -326,5 +319,10 @@ void main() {
         col.rgb *= col.a;
     }
 
-    fragColor = col * alpha * qt_Opacity;
+    // Knock out the full shape coverage, rather than its translucent tint.
+    // shortcut: shadow reach is capped by smoothing padding; expand geometry for wider shadows.
+    float shadowWidth = max(min(15.0, smoothFactor), 0.01);
+    float falloff = 1.0 - smoothstep(0.0, shadowWidth, max(mergedSdf, 0.0));
+    float shadowA = 0.5 * shadowColor.a * falloff * falloff * (1.0 - alpha);
+    fragColor = (col * alpha + vec4(shadowColor.rgb * shadowA, shadowA)) * qt_Opacity;
 }

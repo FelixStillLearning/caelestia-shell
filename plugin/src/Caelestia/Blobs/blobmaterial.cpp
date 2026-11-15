@@ -36,7 +36,7 @@ bool BlobMaterialShader::updateUniformData(RenderState& state, QSGMaterial* newM
     Q_UNUSED(oldMaterial);
     auto* mat = static_cast<BlobMaterial*>(newMaterial);
     QByteArray* buf = state.uniformData();
-    Q_ASSERT(buf->size() >= 1440);
+    Q_ASSERT(buf->size() >= 1456);
 
     if (state.isMatrixDirty()) {
         const QMatrix4x4 m = state.combinedMatrix();
@@ -102,6 +102,13 @@ bool BlobMaterialShader::updateUniformData(RenderState& state, QSGMaterial* newM
         memcpy(buf->data() + base + 48, d3, 16);
         memcpy(buf->data() + base + 64, r.radius, 16);
     }
+
+    // Shadow color follows rectData (offset 1440).
+    const float shadow[4] = {
+        mat->m_shadowColor.redF(), mat->m_shadowColor.greenF(),
+        mat->m_shadowColor.blueF(), mat->m_shadowColor.alphaF(),
+    };
+    memcpy(buf->data() + 1440, shadow, 16);
 
     return true;
 }

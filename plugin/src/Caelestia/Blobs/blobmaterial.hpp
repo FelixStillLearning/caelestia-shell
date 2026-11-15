@@ -40,6 +40,7 @@ public:
     int m_rectCount = 0;
     int m_myIndex = -2;
     QColor m_color{ 0x44, 0x88, 0xff };
+    QColor m_shadowColor{ Qt::transparent };
     int m_hasInverted = 0;
     float m_invertedRadius = 0;
     float m_invertedOuter[4] = {};

@@ -495,6 +495,7 @@ QSGNode* BlobShape::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data)
     material->m_smoothFactor = static_cast<float>(m_group->smoothing());
     material->m_myIndex = m_cachedMyIndex;
     material->m_color = m_group->color();
+    material->m_shadowColor = m_group->shadowColor();
     material->m_hasInverted = m_cachedHasInverted ? 1 : 0;
     material->m_invertedRadius = m_cachedInvertedRadius;
     memcpy(material->m_invertedOuter, m_cachedInvertedOuter, sizeof(m_cachedInvertedOuter));

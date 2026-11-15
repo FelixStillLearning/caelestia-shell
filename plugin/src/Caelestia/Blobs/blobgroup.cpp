@@ -39,6 +39,18 @@ void BlobGroup::setColor(const QColor& c) {
     markDirty();
 }
 
+QColor BlobGroup::shadowColor() const {
+    return m_shadowColor;
+}
+
+void BlobGroup::setShadowColor(const QColor& c) {
+    if (m_shadowColor == c)
+        return;
+    m_shadowColor = c;
+    emit shadowColorChanged();
+    markDirty();
+}
+
 bool BlobGroup::cornerFill() const {
     return m_cornerFill;
 }

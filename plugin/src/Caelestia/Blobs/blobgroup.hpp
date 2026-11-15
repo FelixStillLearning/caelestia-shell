@@ -15,6 +15,7 @@ class BlobGroup : public QObject {
     QML_ELEMENT
     Q_PROPERTY(qreal smoothing READ smoothing WRITE setSmoothing NOTIFY smoothingChanged)
     Q_PROPERTY(QColor color READ color WRITE setColor NOTIFY colorChanged)
+    Q_PROPERTY(QColor shadowColor READ shadowColor WRITE setShadowColor NOTIFY shadowColorChanged)
     Q_PROPERTY(bool cornerFill READ cornerFill WRITE setCornerFill NOTIFY cornerFillChanged)
 
 public:
@@ -26,6 +27,9 @@ public:
 
     [[nodiscard]] QColor color() const;
     void setColor(const QColor& c);
+
+    [[nodiscard]] QColor shadowColor() const;
+    void setShadowColor(const QColor& c);
 
     [[nodiscard]] bool cornerFill() const;
     void setCornerFill(bool e);
@@ -46,11 +50,13 @@ public:
 signals:
     void smoothingChanged();
     void colorChanged();
+    void shadowColorChanged();
     void cornerFillChanged();
 
 private:
     qreal m_smoothing = 32.0;
     QColor m_color{ 0x44, 0x88, 0xff };
+    QColor m_shadowColor{ Qt::transparent };
     bool m_cornerFill = true;
     QList<BlobShape*> m_shapes;
     BlobInvertedRect* m_invertedRect = nullptr;
