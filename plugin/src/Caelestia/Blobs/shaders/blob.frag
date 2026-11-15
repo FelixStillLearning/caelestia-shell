@@ -104,13 +104,7 @@ void main() {
         // Offset center for asymmetric deformation
         vec2 center = rect.xy + props.yz;
 
-        // AABB early-out: skip rects far from this pixel
-        vec2 extent = sh.xy + vec2(smoothFactor * 1.5);
-        if (abs(pixel.x - center.x) > extent.x || abs(pixel.y - center.y) > extent.y) {
-            dArr[i] = 1e10;
-            continue;
-        }
-
+        // Keep distances continuous: culling to a sentinel creates false derivative edges.
         // Apply pre-computed inverse deformation to the evaluation point
         mat2 invDeform = mat2(invDm.xy, invDm.zw);
         vec2 transformedPixel = center + invDeform * (pixel - center);

@@ -42,6 +42,7 @@ Item {
         name: "PopoutJoin"
         when: windowShown
         function init() {
+            group.color = "#202020";
             popup.visible = true;
             closed.width = 0;
             closed.visible = true;
@@ -50,6 +51,31 @@ Item {
             popup.width = 360;
             popup.height = 360;
             scene.Window.window.color = "white";
+        }
+        function test_exterior_data() {
+            return [
+                { tag: "dark-on-white", surface: "#202020", background: "white", red: 255 },
+                { tag: "dark-on-black", surface: "#202020", background: "black", red: 0 },
+                { tag: "light-on-white", surface: "#fff9fa", background: "white", red: 255 },
+                { tag: "light-on-black", surface: "#fff9fa", background: "black", red: 0 }
+            ];
+        }
+        function test_exterior(data) {
+            group.color = data.surface;
+            scene.Window.window.color = data.background;
+            popup.height = 200;
+            for (const offset of [0, 0.375, 4, 12.625]) {
+                popup.x = -10 + offset;
+                popup.y = 80 + offset;
+                wait(32);
+                const image = grabImage(scene);
+                for (let d = 20; d <= 60; ++d) {
+                    compare(image.red(Math.ceil(popup.x + popup.width) + d, 150), data.red,
+                            "no vertical line beyond the panel at offset " + offset + ", distance " + d);
+                    compare(image.red(200, Math.ceil(popup.y + popup.height) + d), data.red,
+                            "no horizontal line beyond the panel at offset " + offset + ", distance " + d);
+                }
+            }
         }
         function test_hiddenPanel() {
             wait(100);
