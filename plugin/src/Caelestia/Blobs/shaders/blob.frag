@@ -16,6 +16,7 @@ layout(std140, binding = 0) uniform buf {
     vec4 color;
     int hasInverted;
     float invertedRadius;
+    float invertedGlass;
     vec4 invertedOuter;
     vec4 invertedInner;
     vec4 rectData[80];
@@ -63,6 +64,18 @@ float smaxSharpA(float a, float b, float k) {
     float sm = min(-k, max(a, b)) + length(max(vec2(a, b) + vec2(k), vec2(0.0)));
     float blend = (sm - max(a, b)) * smoothstep(0.0, k * 0.5, -a);
     return max(a, b) + blend;
+}
+
+float glassLight(vec2 lp, vec2 hs, float r, float sdf, float fw) {
+    float light = 0.07 * clamp((lp.y / hs.y + 0.3) / 1.3, 0.0, 1.0);
+    vec2 sc = vec2(hs.x - r * 0.7, hs.y - r * 0.7);
+    light += 0.13 * max(0.0, 1.0 - length(lp - vec2(-sc.x, sc.y)) / 46.0);
+    light += 0.09 * max(0.0, 1.0 - length(lp - sc) / 46.0);
+
+    float corner = 1.0 - smoothstep(0.0, max(r * 2.5, 0.01), length(hs - min(abs(lp), hs)));
+    float dir = 0.5 - 0.25 * clamp(lp.x / hs.x + lp.y / hs.y, -2.0, 2.0);
+    float rim = mix(0.10, 0.55, corner) * mix(0.72, 1.0, dir) * smoothstep(-1.2 - fw, -1.2 + fw, sdf);
+    return clamp(light + rim, 0.0, 1.0);
 }
 
 void main() {
@@ -264,7 +277,15 @@ void main() {
 
     float fw = fwidth(mergedSdf);
     float alpha = 1.0 - smoothstep(-fw, fw, mergedSdf);
-    vec4 col = vec4(color.rgb, 1.0);
+    float tintA = 1.0;
+    float light = 0.0;
+
+    if (hasInverted != 0 && invertedGlass > 0.0) {
+        float frameW = smoothstep(-4.0, 4.0, minDist - dFrame);
+        float frameTint = clamp(invertedGlass / max(color.a, 0.01), 0.0, 1.0);
+        tintA += (frameTint - 1.0) * frameW;
+        light += glassLight(pixel - invertedInner.xy, invertedInner.zw, invertedRadius, mergedSdf, fw) * frameW;
+    }
 
     // ---- Kaca cair (fork glass), mengikuti notch Jarvis ----
     // rectData[i*5+3].z = alpha tint kaca (0 = permukaan biasa). Bobot kaca dibaurkan +-4 px di garis tengah
@@ -298,26 +319,11 @@ void main() {
 
         // Parent opacity supplies surfaceColour.a; shadows no longer need compensation.
         float aGlass = clamp(rectData[gi * 5 + 3].z / max(color.a, 0.01), 0.0, 1.0);
-        float tintA = mix(1.0, aGlass, glassW);
-
-        // cahaya lembut yang terkumpul di dasar kaca (dari 35% tinggi ke bawah)
-        float light = 0.07 * clamp((lp.y / hs.y + 0.3) / 1.3, 0.0, 1.0);
-
-        // kilau di dua sudut bawah
-        vec2 sc = vec2(hs.x - r * 0.7, hs.y - r * 0.7);
-        light += 0.13 * max(0.0, 1.0 - length(lp - vec2(-sc.x, sc.y)) / 46.0);
-        light += 0.09 * max(0.0, 1.0 - length(lp - sc) / 46.0);
-
-        // tepi 1.2 px: paling terang di sudut, redup di tengah sisi, sedikit lebih terang di kiri atas
-        float corner = 1.0 - smoothstep(0.0, r * 2.5, length(hs - min(abs(lp), hs)));
-        float dir = 0.5 - 0.25 * clamp(lp.x / hs.x + lp.y / hs.y, -2.0, 2.0);
-        float rim = mix(0.10, 0.55, corner) * mix(0.72, 1.0, dir) * smoothstep(-1.2 - fw, -1.2 + fw, mergedSdf);
-
-        float a = clamp(light + rim, 0.0, 1.0) * glassW;
-        col = vec4(color.rgb * tintA, tintA) * (1.0 - a) + vec4(a); // putih di atas tint (premultiplied)
-    } else {
-        col.rgb *= col.a;
+        tintA += (aGlass - 1.0) * glassW;
+        light += glassLight(lp, hs, r, mergedSdf, fw) * glassW;
     }
+
+    vec4 col = vec4(color.rgb * tintA, tintA) * (1.0 - light) + vec4(light);
 
     // Knock out the full shape coverage, rather than its translucent tint.
     // shortcut: shadow reach is capped by smoothing padding; expand geometry for wider shadows.

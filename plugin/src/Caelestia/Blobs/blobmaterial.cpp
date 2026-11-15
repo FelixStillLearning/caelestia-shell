@@ -77,7 +77,8 @@ bool BlobMaterialShader::updateUniformData(RenderState& state, QSGMaterial* newM
     // Inverted radius (offset 116)
     memcpy(buf->data() + 116, &mat->m_invertedRadius, 4);
 
-    // Padding at 120-127 (skip)
+    // Inverted glass uses the padding slot at offset 120.
+    memcpy(buf->data() + 120, &mat->m_invertedGlass, 4);
 
     // Inverted outer (offset 128, 16 bytes)
     memcpy(buf->data() + 128, mat->m_invertedOuter, 16);

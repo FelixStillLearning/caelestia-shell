@@ -92,6 +92,7 @@ protected:
     float m_pendingDy = 0;
     bool m_cachedHasInverted = false;
     float m_cachedInvertedRadius = 0;
+    float m_cachedInvertedGlass = 0;
     float m_cachedInvertedOuter[4] = {};
     float m_cachedInvertedInner[4] = {};
 };

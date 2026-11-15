@@ -67,8 +67,13 @@ QSGNode* BlobInvertedRect::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData
     const float holeBot = static_cast<float>(height() - m_borderBottom) - inset;
 
     // If the hole is too small or invalid, fall back to full quad
-    if (holeLeft >= holeRight || holeTop >= holeBot)
+    if (holeLeft >= holeRight || holeTop >= holeBot) {
+        if (oldNode && static_cast<QSGGeometryNode*>(oldNode)->geometry()->vertexCount() != 4) {
+            delete oldNode;
+            oldNode = nullptr;
+        }
         return BlobShape::updatePaintNode(oldNode, nullptr);
+    }
 
     auto* node = static_cast<QSGGeometryNode*>(oldNode);
 
@@ -125,8 +130,10 @@ QSGNode* BlobInvertedRect::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData
     material->m_smoothFactor = pad;
     material->m_myIndex = m_cachedMyIndex;
     material->m_color = m_group->color();
+    material->m_shadowColor = m_group->shadowColor();
     material->m_hasInverted = m_cachedHasInverted ? 1 : 0;
     material->m_invertedRadius = m_cachedInvertedRadius;
+    material->m_invertedGlass = m_cachedInvertedGlass;
     memcpy(material->m_invertedOuter, m_cachedInvertedOuter, sizeof(m_cachedInvertedOuter));
     memcpy(material->m_invertedInner, m_cachedInvertedInner, sizeof(m_cachedInvertedInner));
 

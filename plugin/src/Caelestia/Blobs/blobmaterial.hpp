@@ -43,6 +43,7 @@ public:
     QColor m_shadowColor{ Qt::transparent };
     int m_hasInverted = 0;
     float m_invertedRadius = 0;
+    float m_invertedGlass = 0;
     float m_invertedOuter[4] = {};
     float m_invertedInner[4] = {};
     BlobRectData m_rects[k_maxRects] = {};
