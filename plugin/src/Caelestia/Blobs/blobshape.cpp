@@ -68,6 +68,10 @@ void rectCorners(const BlobRectData& r, float outX[4], float outY[4]) {
 BlobShape::BlobShape(QQuickItem* parent)
     : QQuickItem(parent) {
     setFlag(ItemHasContents);
+    connect(this, &QQuickItem::visibleChanged, this, [this] {
+        if (m_group)
+            m_group->markDirty();
+    });
 }
 
 BlobGroup* BlobShape::group() const {
@@ -288,8 +292,8 @@ void BlobShape::collectNearbyRects(float pad, QVector<BlobShape*>& rectShapes) {
         if (other->isInvertedRect())
             continue;
 
-        // Skip zero-size rects
-        if (other->width() <= 0 || other->height() <= 0)
+        // Skip hidden and zero-size rects.
+        if (!other->isVisible() || other->width() <= 0 || other->height() <= 0)
             continue;
 
         // Excluded neighbours still share pixel ownership; masks only disable their smooth blend.
@@ -349,7 +353,7 @@ void BlobShape::cacheInvertedRect(float pad) {
     memset(m_cachedInvertedInner, 0, sizeof(m_cachedInvertedInner));
 
     auto* inv = m_group->invertedRect();
-    if (!inv)
+    if (!inv || !inv->isVisible())
         return;
 
     const QPointF invScene = inv->mapToScene(QPointF(0, 0));
@@ -450,7 +454,8 @@ void BlobShape::applyCornerFill(float smoothFactor, const QVector<BlobShape*>& r
 QSGNode* BlobShape::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) {
     Q_UNUSED(data);
 
-    if (!m_group) {
+    const auto* frame = m_group ? m_group->invertedRect() : nullptr;
+    if (!m_group || (frame && frame->isVisible() && !isInvertedRect())) {
         delete oldNode;
         return nullptr;
     }
@@ -493,7 +498,8 @@ QSGNode* BlobShape::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data)
     material->m_paddedW = m_cachedPaddedW;
     material->m_paddedH = m_cachedPaddedH;
     material->m_smoothFactor = static_cast<float>(m_group->smoothing());
-    material->m_myIndex = m_cachedMyIndex;
+    // shortcut: one full-frame quad keeps animated SDFs coherent; tile only if profiling requires it.
+    material->m_myIndex = isInvertedRect() ? -3 : m_cachedMyIndex;
     material->m_color = m_group->color();
     material->m_shadowColor = m_group->shadowColor();
     material->m_hasInverted = m_cachedHasInverted ? 1 : 0;

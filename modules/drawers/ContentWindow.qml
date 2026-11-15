@@ -335,6 +335,7 @@ StyledWindow {
 
         group: blobGroup
         glass: Colours.transparency.glass
+        visible: panel.visible && panel.width > 0 && panel.height > 0
         x: panel.x + bar.implicitWidth
         y: panel.y + root.borderThickness
         implicitWidth: panel.width

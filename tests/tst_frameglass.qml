@@ -75,11 +75,11 @@ Item {
             compare(shadow.pixel(30, 60), before.pixel(30, 60), "no shadow under bar");
             verify(shadow.red(68, 70) < before.red(68, 70), "frame renderer receives outer shadow");
 
-            // A small hole selects the frame's full-quad renderer.
+            // Changing the frame hole keeps the merged surface coherent.
             frame.borderLeft = 340;
             frame.borderRight = 200;
             wait(100);
-            fuzzyCompare((255 - grabImage(scene).red(30, 60)) / (255 - 32), 0.38, 0.02, "full-quad frame tint");
+            fuzzyCompare((255 - grabImage(scene).red(30, 60)) / (255 - 32), 0.38, 0.02, "resized frame tint");
 
             frame.glass = 0;
             wait(100);
@@ -89,7 +89,7 @@ Item {
             frame.borderLeft = 60;
             frame.borderRight = 20;
             wait(100);
-            fuzzyCompare((255 - grabImage(scene).red(590, 60)) / (255 - 32), 0.38, 0.02, "return to frame mesh");
+            fuzzyCompare((255 - grabImage(scene).red(590, 60)) / (255 - 32), 0.38, 0.02, "restored frame inset");
         }
     }
 }

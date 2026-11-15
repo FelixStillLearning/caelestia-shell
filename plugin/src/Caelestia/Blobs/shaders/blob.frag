@@ -66,20 +66,17 @@ float smaxSharpA(float a, float b, float k) {
     return max(a, b) + blend;
 }
 
-float glassLight(vec2 lp, vec2 hs, float r, float sdf, float fw) {
-    float light = 0.07 * clamp((lp.y / hs.y + 0.3) / 1.3, 0.0, 1.0);
-    vec2 sc = vec2(hs.x - r * 0.7, hs.y - r * 0.7);
-    light += 0.13 * max(0.0, 1.0 - length(lp - vec2(-sc.x, sc.y)) / 46.0);
-    light += 0.09 * max(0.0, 1.0 - length(lp - sc) / 46.0);
-
-    float corner = 1.0 - smoothstep(0.0, max(r * 2.5, 0.01), length(hs - min(abs(lp), hs)));
-    float dir = 0.5 - 0.25 * clamp(lp.x / hs.x + lp.y / hs.y, -2.0, 2.0);
-    float rim = mix(0.10, 0.55, corner) * mix(0.72, 1.0, dir) * smoothstep(-1.2 - fw, -1.2 + fw, sdf);
-    return clamp(light + rim, 0.0, 1.0);
+float glassLight(vec2 normal, float sdf, float fw) {
+    float facing = clamp(0.5 - 0.35 * (normal.x + normal.y), 0.0, 1.0);
+    float rim = mix(0.05, 0.24, facing) * smoothstep(-1.2 - fw, -1.2 + fw, sdf);
+    float sheen = mix(0.012, 0.035, facing) * (1.0 - smoothstep(0.0, 20.0, max(-sdf, 0.0)));
+    return rim + sheen;
 }
 
 void main() {
     vec2 pixel = vec2(paddedX, paddedY) + qt_TexCoord0 * vec2(paddedW, paddedH);
+    // Mesh interpolation must agree at ownership ties or translucent pixels overlap/vanish.
+    pixel = round(pixel * 256.0) / 256.0;
 
     // Phase 1: compute per-rect SDF, track owner. We can't smin yet because excluded
     // pairs need to skip the smooth blend, which requires pairwise pass below.
@@ -271,14 +268,15 @@ void main() {
         }
     }
 
-    // A translucent union must be drawn once, including the blend zones.
-    if (owner != myIndex)
-        discard;
-
+    // -3 draws the entire union with one shared SDF snapshot.
     float fw = fwidth(mergedSdf);
+    // Derive the normal in scene coordinates, independent of the graphics API's Y direction.
+    vec2 gradient = vec2(dFdx(mergedSdf), dFdy(mergedSdf)) / vec2(dFdx(pixel.x), dFdy(pixel.y));
+    if (myIndex != -3 && owner != myIndex)
+        discard;
     float alpha = 1.0 - smoothstep(-fw, fw, mergedSdf);
     float tintDelta = 0.0;
-    float light = 0.0;
+    float glassWeight = 0.0;
     float totalWeight = 0.0;
 
     if (hasInverted != 0) {
@@ -287,7 +285,7 @@ void main() {
         if (invertedGlass > 0.0) {
             float frameTint = clamp(invertedGlass / max(color.a, 0.01), 0.0, 1.0);
             tintDelta += (frameTint - 1.0) * frameW;
-            light += glassLight(pixel - invertedInner.xy, invertedInner.zw, invertedRadius, mergedSdf, fw) * frameW;
+            glassWeight += frameW;
         }
     }
 
@@ -307,24 +305,17 @@ void main() {
         if (w <= 0.0 || g <= 0.0)
             continue;
 
-        vec4 rect = rectData[i * 5];
-        vec4 props = rectData[i * 5 + 1];
-        vec4 invDm = rectData[i * 5 + 2];
-        vec4 radii = rectData[i * 5 + 4];
-        vec2 center = rect.xy + props.yz;
-        vec2 hs = rect.zw;
-        vec2 lp = mat2(invDm.xy, invDm.zw) * (pixel - center); // ikut deformasi pegas
-        float r = max(max(radii.x, radii.y), max(radii.z, radii.w));
-
         // Parent opacity supplies surfaceColour.a; shadows no longer need compensation.
         float aGlass = clamp(g / max(color.a, 0.01), 0.0, 1.0);
         tintDelta += (aGlass - 1.0) * w;
-        light += glassLight(lp, hs, r, mergedSdf, fw) * w;
+        glassWeight += w;
     }
 
     // Normalise multi-panel junctions so equal glass tints stay equal through the join.
     float tintA = 1.0 + tintDelta / max(totalWeight, 0.001);
-    light /= max(totalWeight, 0.001);
+    vec2 normal = gradient / max(length(gradient), 0.001);
+    float light = glassLight(normal, mergedSdf, fw);
+    light = clamp(light * glassWeight / max(totalWeight, 0.001), 0.0, 1.0);
     vec4 col = vec4(color.rgb * tintA, tintA) * (1.0 - light) + vec4(light);
 
     // Knock out the full shape coverage, rather than its translucent tint.
