@@ -133,6 +133,18 @@ sudo cmake --install build
 > sudo chown -R $USER ~/.config/quickshell/caelestia
 > ```
 
+### Local install to `~/.local` (glass branch)
+
+The AUR `caelestia-shell` package overwrites the QML plugins in `/usr/lib/qt6/qml/Caelestia`, which breaks
+branches that add plugin properties (e.g. `BlobGroup.shadowColor`: `Cannot assign to non-existent property`).
+Install the plugins to the user prefix instead, no sudo needed:
+
+```sh
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$HOME/.local" -DINSTALL_LIBDIR=lib/caelestia -DINSTALL_QMLDIR=lib/qt6/qml
+cmake --build build && cmake --install build
+export QML_IMPORT_PATH="$HOME/.local/lib/qt6/qml"   # persistent: Hyprland env
+```
+
 ## Usage
 
 You can start the shell by running `caelestia shell -d` (preferred) or `qs -c caelestia -n -d`.
