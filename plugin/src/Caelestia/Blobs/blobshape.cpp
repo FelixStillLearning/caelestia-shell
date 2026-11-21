@@ -9,7 +9,7 @@
 #include "blobgroup.hpp"
 #include "blobinvertedrect.hpp"
 
-namespace caelestia::blobs {
+namespace caelestia::shell::blobs {
 
 namespace {
 
@@ -321,14 +321,14 @@ void BlobShape::computeExcludeMasks(const QVector<BlobShape*>& rectShapes) {
     // The shader uses this to avoid smin between excluded pairs.
     const auto cachedCount = m_cachedRects.size();
     for (qsizetype i = 0; i < cachedCount; ++i) {
-        int mask = 0;
+        quint32 mask = 0;
         const BlobShape* si = rectShapes[i];
         for (qsizetype j = 0; j < cachedCount; ++j) {
             if (j == i)
                 continue;
             const BlobShape* sj = rectShapes[j];
             if (si->isExcluded(sj) || sj->isExcluded(si))
-                mask |= (1 << j);
+                mask |= (1u << static_cast<quint32>(j));
         }
         m_cachedRects[i].excludeMask = mask;
     }
@@ -352,7 +352,7 @@ void BlobShape::cacheInvertedRect(float pad) {
     memset(m_cachedInvertedOuter, 0, sizeof(m_cachedInvertedOuter));
     memset(m_cachedInvertedInner, 0, sizeof(m_cachedInvertedInner));
 
-    auto* inv = m_group->invertedRect();
+    const auto* inv = m_group->invertedRect();
     if (!inv || !inv->isVisible())
         return;
 
@@ -389,13 +389,13 @@ void BlobShape::cacheInvertedRect(float pad) {
 void BlobShape::accumulateNeighbourFill(qsizetype index, const QVector<BlobShape*>& rectShapes, const float cornerX[4],
     const float cornerY[4], float smoothFactor, float factors[4]) const {
     const auto rectCount = m_cachedRects.size();
-    const int excludeMask = m_cachedRects[index].excludeMask;
+    const quint32 excludeMask = m_cachedRects[index].excludeMask;
     const BlobShape* si = rectShapes[index];
 
     for (qsizetype j = 0; j < rectCount; ++j) {
         if (j == index)
             continue;
-        if (excludeMask & (1 << j))
+        if (excludeMask & (1u << static_cast<quint32>(j)))
             continue;
 
         const BlobShape* sj = rectShapes[j];
@@ -518,4 +518,4 @@ QSGNode* BlobShape::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data)
     return node;
 }
 
-} // namespace caelestia::blobs
+} // namespace caelestia::shell::blobs

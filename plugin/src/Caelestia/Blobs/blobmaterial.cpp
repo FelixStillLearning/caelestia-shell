@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-namespace caelestia::blobs {
+namespace caelestia::shell::blobs {
 
 using Qt::StringLiterals::operator""_s;
 
@@ -114,4 +114,4 @@ bool BlobMaterialShader::updateUniformData(RenderState& state, QSGMaterial* newM
     return true;
 }
 
-} // namespace caelestia::blobs
+} // namespace caelestia::shell::blobs

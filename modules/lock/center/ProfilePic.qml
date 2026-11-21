@@ -2,8 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Caelestia.Config
+import Caelestia.Multimedia
 import qs.components
-import qs.components.images
 import qs.services
 import qs.utils
 
@@ -16,7 +16,7 @@ Item {
     implicitWidth: Math.round(Math.min(128, centerWidth * 0.32))
     implicitHeight: implicitWidth
 
-    StyledClippingRect {
+    ClipRect {
         id: avatar
 
         anchors.fill: parent
@@ -28,14 +28,14 @@ Item {
             text: "person"
             color: Colours.palette.m3onSurfaceVariant
             fontStyle: Tokens.font.icon.size(root.width * 0.45).build()
-            visible: pfp.status !== Image.Ready
+            visible: !pfp.ready
         }
 
-        CachingImage {
+        Visual {
             id: pfp
 
             anchors.fill: parent
-            path: `${Paths.home}/.face`
+            source: `${Paths.home}/.face`
         }
     }
 
